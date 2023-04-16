@@ -42,7 +42,22 @@ CommunityMove <- data.frame(index = 1:16, moveto = c())
 
 ```{r student3}
 #James Bartsch
-#trial
+#dice with unique doubles/triples results
+roll<-function() {
+  die <- sample(1:6, 6, replace = T)
+  if(die[1] != die[2]){
+    total_sum<-sum(die[1:2])
+    return(total_sum)
+  }
+  if( die[3] != die[4]){
+    print("double")
+  total_sum<-sum(die[1:4])
+    return(total_sum)}
+if(die[5] != die[6]){
+    print("triple")
+  print("go to jail")
+}}
+
 
 
 
