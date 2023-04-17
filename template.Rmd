@@ -7,7 +7,10 @@ date: "2023-03-31"
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
+library(tibble)
 library(tidyr)
+library(utils)
+library(dplyr)
 ```
 
 ## Section One
@@ -58,8 +61,12 @@ if(die[5] != die[6]){
   print("go to jail")
 }}
 
-reset_board<-function(){
-  new_board_squares<-NULL
+reset_board<-function(){#takes in no input and outputs a reset game board
+  
+  #sets game board to NULL
+  new_board_squares<-NULL 
+  
+#defines the tiles in order
 tiles <- c("Go", "Mediterranean Avenue", "Community Chest", "Baltic Avenue", "Income Tax", 
            "Reading Railroad", "Oriental Avenue", "Chance", "Vermont Avenue", "Connecticut Avenue", 
            "Jail", "St. Charles Place", "Electric Company", "States Avenue", "Virginia Avenue", 
@@ -69,19 +76,21 @@ tiles <- c("Go", "Mediterranean Avenue", "Community Chest", "Baltic Avenue", "In
            "Marvin Gardens", "Go to Jail", "Pacific Avenue", "North Carolina Avenue", "Community Chest", 
            "Pennsylvania Avenue", "Short Line Railroad", "Chance", "Park Place", "Luxury Tax", "Boardwalk")
 
+#defines potential variables each tile can have in the form of a spread sheet
 board_squares<- tibble("Tile Name" = tiles, Class = NA, Occupants = NA, Owner = NA, "Part of Monopoly" = NA, Description = NA, "Cost to Occupy" = NA, Effect = NA, "Effect on Player_1" = NA,"Effect on Player_2" = NA,"Effect on Player_3" = NA,"Effect on Player_4" = NA, "Effect on Bank"= NA)
 
-
+#defines the property tiles as Class = "Property Tile" in the spread sheet
 Property_Tiles<- board_squares %>% filter(`Tile Name` %in% c("Mediterranean Avenue", "Baltic Avenue", "Oriental Avenue", "Vermont Avenue", "Connecticut Avenue", "St. Charles Place", "States Avenue", "Virginia Avenue", "St. James Place", "Tennessee Avenue", "New York Avenue", "Kentucky Avenue", "Indiana Avenue", "Illinois Avenue", "Atlantic Avenue", "Ventnor Avenue", "Marvin Gardens", "Pacific Avenue", "North Carolina Avenue", "Pennsylvania Avenue", "Park Place", "Boardwalk"))%>%
   mutate(`Class` = "Property Tile")
 
-
+#defines the utility tiles as Class = "Utility Tile" in the spread sheet
 Utility_Tiles<- board_squares %>% filter(`Tile Name` %in% c("Electric Company", "Water Works"))%>%
   mutate(`Class` = "Utility Tile")
 
+#defines the Railroad tiles as Class = "Railroad Tile" in the spread sheet
 Railroad_Tiles<- board_squares %>% filter(`Tile Name` %in% c("Reading Railroad", "Pennsylvania Railroad", "B&O Railroad", "Short Line Railroad"))%>%
   mutate(`Class` = "Railroad Tile")
-
+#etc...
 Chance_Tiles<- board_squares %>% filter(`Tile Name` %in% c("Chance"))%>%
   mutate(`Class` = "Chance Tile")
 
@@ -106,17 +115,83 @@ Jail<- board_squares %>% filter(`Tile Name` %in% c("Jail"))%>%
 Free_Parking<- board_squares %>% filter(`Tile Name` %in% c("Free Parking"))%>%
   mutate(`Class` = "Free Parking")
 
+#recombines the different tile classes together
 new_board_squares<-bind_rows(Property_Tiles,Utility_Tiles,Railroad_Tiles,Chance_Tiles,Community_Chest_Tiles,Go_Tiles,Luxury_Tax_Tiles,Income_Tax_Tiles,Go_to_Jail_Tiles,Jail,Free_Parking)
+
+#reorganizes the tiles back into their correct locations
 new_board_squares<-new_board_squares[match(board_squares$`Tile Name`, new_board_squares$`Tile Name`), ]
 View(new_board_squares)}
+
 
 reset_board()
 
 new_board_squares
 
-Player_1
+
+token_selection<-function(...) {#takes a 2 to 4 values, either the name of a piece or a ?, and outputs those pieces as a character vector
+  
+  #list of pieces
+  pieces <- c("ace of spades","airplane","alarm clock","alligator","anvil","baby dinosaur","bag of money","balloon","baseball glove","basket","battleship","beach cruiser bike","bear","bicycle","boat","boot","bowtie","cactus","cannon","car","cat","cell phone","cheeseburger","chef's hat","chicken","computer","conductor's hat","cowboy hat","crab","crown","crystal","diamond","diamond ring","dice","dog","donut","dragon","duck","ducky","earmuffs","earth","egg","electric guitar","elephant","empanada","fire hydrant","fish","fishing pole","football","football helmet","frankenstein","french fries","frog","ghost","giant panda","gingerbread man","giraffe","globe","goldfish","golf bag","gondola","graduation cap","grapes","guitar","hammer","handcuffs","happy meal","hard hat","hashtag","hat","helicopter","hot air balloon","hot dog","horse and rider","horse shoe","ice cream cone","iron","jet plane","kangaroo","kettle","key","keyboard","king","kitty","koala","lantern","laptop","lighthouse","limousine","lion","little red wagon","locomotive","london bus","magic lamp","magnet","mallard duck","mallet","maple leaf","matchstick","metal car","microphone","money bag","monster truck","moon rover","motorcycle","mr. monopoly","music note","new balance sneaker","panda","penguin","phone","piece of cake","piggy bank","pineapple","plane","pretzel","pumpkin","racecar","razor","robot","roller skate","rooster","rubber ducky","sailboat","saxophone","scottie dog","shoe","skateboard","spaceship","spoon","sports car","stack of cash","star","statue of liberty","stethoscope","strawberry","sunflower","sunglasses","surfboard","taco","thimble","top hat","t-rex","tree","trolley car","trumpet","turtle","tv","typewriter","umbrella","wheelbarrow")
+  
+  #Changes everything to lower case
+  names <- tolower(c(...))
+  
+  #Check that there are between 2 and 4 names
+  if (length(names) < 2 || length(names) > 4) {
+    message("Please input between 2 and 4 valid Monopoly piece names")
+    return(NULL)
+  }
+  
+  #Check that each name is a valid Monopoly piece or "?"
+  valid_pieces <- c(pieces, "?")
+  for (name in names) {
+    if (!(name %in% valid_pieces)) {
+      message("Invalid Monopoly piece name: ", name)
+      return(NULL)
+    }
+  }
+  
+  #Assigns a random piece to any "?" inputs
+  if ("?" %in% names) {
+    chosen_pieces <- unique(names[names != "?"])
+    available_pieces <- setdiff(pieces, chosen_pieces)
+    random_piece <- sample(available_pieces, 1)
+    names[names == "?"] <- random_piece
+  }
+  
+  #Creates a tibble of Player_Number and Name
+  player_num <- 1:length(names)
+  tibble(Player_Number = player_num, Name = names)
+}
 
 
+
+assign_players <- function(name1, name2, name3 = NA, name4 = NA) {
+  
+  # Combine the names into a vector
+  names <- c(name1, name2, name3, name4)
+  
+  # Remove any NA values
+  names <- na.omit(names)
+  
+  # Generate random scores for each player
+  scores <- sample(1:6, length(names) * 2, replace = TRUE)
+  scores <- tapply(scores, rep(1:length(names), each = 2), sum)
+  
+  # Combine the names and scores into a tibble
+  players <- tibble(Name = names, Score = scores)
+  
+  # Sort the tibble by score in descending order
+  players <- players[order(-players$Score), ]
+  
+  # Assign the player numbers
+  players$Player_Number <- 1:nrow(players)
+  
+  # Return the tibble with only two columns
+  return(players[1:4, c("Player_Number", "Name")])
+}
+
+assign_players("d","2fish","redfish","bluefish")
 
 
 
