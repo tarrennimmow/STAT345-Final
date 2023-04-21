@@ -24,12 +24,12 @@ Gameboard <- data.frame(space = 1:40, title = c("Go", "Mediterranean Avenue", "C
 
 ChanceCards <- data.frame(index = 1:16, card = c("Advance to Boardwalk", "Advance to Go (Collect $200)", "Advance to Illinois Avenue. If you pass Go, collect $200", "Advance to St. Charles Place. If you pass Go, collect $200", "Advance to the nearest Railroad. If unowned, you may buy it from the Bank. If owned, pay wonder twice the rental to which they are otherwise entitled", "Advance to the nearest Railroad. If unowned, you may buy it from the Bank. If owned, pay wonder twice the rental to which they are otherwise entitled", "Advance token to nearest Utility. If unowned, you may buy it from the Bank. If owned, throw dice and pay owner a total ten times amount thrown.", "Bank pays you dividend of $50", "Get Out of Jail Free", "Go Back 3 Spaces", "Go to Jail. Go directly to Jail, do not pass Go, do not collect $200", "Make general repairs on all your property. For each house pay $25. For each hotel pay $100", "Speeding fine $15", "Take a trip to Reading Railroad. If you pass Go, collect $200", "You have been elected Chairman of the Board. Pay each player $50", "Your building loan matures. Collect $150"))
 
-ChanceMove <- data.frame(index = 1:16, moveto = c())
+#ChanceMove <- data.frame(index = 1:16, moveto = c())
 
 
 CommunityChestCards <- data.frame(index = 1:16, card = c("Advance to Go (Collect $200)", "Bank error in your favor. Collect $200", "Doctor’s fee. Pay $50", "From sale of stock you get $50", "Get Out of Jail Free", "Go to Jail. Go directly to jail, do not pass Go, do not collect $200", "Holiday fund matures. Receive $100", "Income tax refund. Collect $20", "It is your birthday. Collect $10 from every player", "Life insurance matures. Collect $100", "Pay hospital fees of $100", "Pay school fees of $50", "Receive $25 consultancy fee", "You are assessed for street repair. $40 per house. $115 per hotel", "You have won second prize in a beauty contest. Collect $10", "You inherit $100"))
 
-CommunityMove <- data.frame(index = 1:16, moveto = c())
+#CommunityMove <- data.frame(index = 1:16, moveto = c())
 
 ```
 
@@ -60,6 +60,18 @@ if(die[5] != die[6]){
     print("triple")
   print("go to jail")
 }}
+
+tiles <- c("Go", "Mediterranean Avenue", "Community Chest", "Baltic Avenue", "Income Tax", 
+           "Reading Railroad", "Oriental Avenue", "Chance", "Vermont Avenue", "Connecticut Avenue", 
+           "Jail", "St. Charles Place", "Electric Company", "States Avenue", "Virginia Avenue", 
+           "Pennsylvania Railroad", "St. James Place", "Community Chest", "Tennessee Avenue", 
+           "New York Avenue", "Free Parking", "Kentucky Avenue", "Chance", "Indiana Avenue", 
+           "Illinois Avenue", "B&O Railroad", "Atlantic Avenue", "Ventnor Avenue", "Water Works", 
+           "Marvin Gardens", "Go to Jail", "Pacific Avenue", "North Carolina Avenue", "Community Chest", 
+           "Pennsylvania Avenue", "Short Line Railroad", "Chance", "Park Place", "Luxury Tax", "Boardwalk")
+
+
+board_squares<- tibble("Tile Name" = tiles, Class = NA, Occupants = NA, Owner = NA, "Part of Monopoly" = NA, Description = NA, "Cost to Occupy" = NA, Effect = NA, "Effect on Player 1" = NA,"Effect on Player 2" = NA,"Effect on Player 3" = NA,"Effect on Player 4" = NA)
 
 reset_board<-function(){#takes in no input and outputs a reset game board
   
@@ -114,18 +126,20 @@ Jail<- board_squares %>% filter(`Tile Name` %in% c("Jail"))%>%
 
 Free_Parking<- board_squares %>% filter(`Tile Name` %in% c("Free Parking"))%>%
   mutate(`Class` = "Free Parking")
+new_board_squares<-bind_rows(Property_Tiles,Utility_Tiles,Railroad_Tiles,Chance_Tiles,Community_Chest_Tiles,Go_Tiles,Luxury_Tax_Tiles,Income_Tax_Tiles,Go_to_Jail_Tiles,Jail,Free_Parking)
+new_board_squares<-new_board_squares[match(board_squares$`Tile Name`, new_board_squares$`Tile Name`), ]
+
 
 #recombines the different tile classes together
 new_board_squares<-bind_rows(Property_Tiles,Utility_Tiles,Railroad_Tiles,Chance_Tiles,Community_Chest_Tiles,Go_Tiles,Luxury_Tax_Tiles,Income_Tax_Tiles,Go_to_Jail_Tiles,Jail,Free_Parking)
 
 #reorganizes the tiles back into their correct locations
 new_board_squares<-new_board_squares[match(board_squares$`Tile Name`, new_board_squares$`Tile Name`), ]
-View(new_board_squares)}
-
+View(new_board_squares)
+}
 
 reset_board()
 
-new_board_squares
 
 
 token_selection<-function(...) {#takes a 2 to 4 values, either the name of a piece or a ?, and outputs those pieces as a character vector
@@ -155,8 +169,8 @@ token_selection<-function(...) {#takes a 2 to 4 values, either the name of a pie
   if ("?" %in% names) {
     chosen_pieces <- unique(names[names != "?"])
     available_pieces <- setdiff(pieces, chosen_pieces)
-    random_piece <- sample(available_pieces, 1)
-    names[names == "?"] <- random_piece
+    random_piece <- sample(available_pieces, 2)
+    names[names == "?"] <- random_piece[1]
   }
   
   #Creates a tibble of Player_Number and Name
@@ -191,9 +205,10 @@ assign_players <- function(name1, name2, name3 = NA, name4 = NA) {
   return(players[1:4, c("Player_Number", "Name")])
 }
 
-assign_players("d","2fish","redfish","bluefish")
 
 
+
+token_selection("ace of spades", "crab","?", "?")
 
 
 
