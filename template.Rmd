@@ -140,6 +140,8 @@ View(new_board_squares)
 
 reset_board()
 
+#need to add check counting how many "?" values are included in the token_selection
+
 
 
 token_selection<-function(...) {#takes a 2 to 4 values, either the name of a piece or a ?, and outputs those pieces as a character vector
@@ -169,8 +171,8 @@ token_selection<-function(...) {#takes a 2 to 4 values, either the name of a pie
   if ("?" %in% names) {
     chosen_pieces <- unique(names[names != "?"])
     available_pieces <- setdiff(pieces, chosen_pieces)
-    random_piece <- sample(available_pieces, 2)
-    names[names == "?"] <- random_piece[1]
+    random_piece <- sample(available_pieces, 1)
+    names[names == "?"] <- random_piece
   }
   
   #Creates a tibble of Player_Number and Name
@@ -180,14 +182,10 @@ token_selection<-function(...) {#takes a 2 to 4 values, either the name of a pie
 
 
 
-assign_players <- function(name1, name2, name3 = NA, name4 = NA) {
+assign_players <- function(...){
   
   # Combine the names into a vector
-  names <- c(name1, name2, name3, name4)
-  
-  # Remove any NA values
-  names <- na.omit(names)
-  
+  names<-c(...)
   # Generate random scores for each player
   scores <- sample(1:6, length(names) * 2, replace = TRUE)
   scores <- tapply(scores, rep(1:length(names), each = 2), sum)
@@ -202,16 +200,21 @@ assign_players <- function(name1, name2, name3 = NA, name4 = NA) {
   players$Player_Number <- 1:nrow(players)
   
   # Return the tibble with only two columns
-  return(players[1:4, c("Player_Number", "Name")])
+  return(na.omit(players[1:4, c("Player_Number", "Name")]))
 }
 
 
 
 
-token_selection("ace of spades", "crab","?", "?")
+assign_players()
 
 
+players_tokens <- token_selection("ace of spades", "crab","?")
+players_tokens
+#charter vector of names
+str(players_tokens$Name)
 
+assign_players(players_tokens$Name)
 
 
 ```
