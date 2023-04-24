@@ -55,7 +55,6 @@ player <- setRefClass("player", fields = list(pos="numeric", verbos='logical'), 
 ```{r student2}
 #Tarren
 # another test
-list(players = players, location_tally = location_tally)
 ```
 
 ## Section Three
@@ -173,7 +172,7 @@ as.character(c(...))
   #list of pieces
   pieces <- c("ace of spades","airplane","alarm clock","alligator","anvil","baby dinosaur","bag of money","balloon","baseball glove","basket","battleship","beach cruiser bike","bear","bicycle","boat","boot","bowtie","cactus","cannon","car","cat","cell phone","cheeseburger","chef's hat","chicken","computer","conductor's hat","cowboy hat","crab","crown","crystal","diamond","diamond ring","dice","dog","donut","dragon","duck","ducky","earmuffs","earth","egg","electric guitar","elephant","empanada","fire hydrant","fish","fishing pole","football","football helmet","frankenstein","french fries","frog","ghost","giant panda","gingerbread man","giraffe","globe","goldfish","golf bag","gondola","graduation cap","grapes","guitar","hammer","handcuffs","happy meal","hard hat","hashtag","hat","helicopter","hot air balloon","hot dog","horse and rider","horse shoe","ice cream cone","iron","jet plane","kangaroo","kettle","key","keyboard","king","kitty","koala","lantern","laptop","lighthouse","limousine","lion","little red wagon","locomotive","london bus","magic lamp","magnet","mallard duck","mallet","maple leaf","matchstick","metal car","microphone","money bag","monster truck","moon rover","motorcycle","mr. monopoly","music note","new balance sneaker","panda","penguin","phone","piece of cake","piggy bank","pineapple","plane","pretzel","pumpkin","racecar","razor","robot","roller skate","rooster","rubber ducky","sailboat","saxophone","scottie dog","shoe","skateboard","spaceship","spoon","sports car","stack of cash","star","statue of liberty","stethoscope","strawberry","sunflower","sunglasses","surfboard","taco","thimble","top hat","t-rex","tree","trolley car","trumpet","turtle","tv","typewriter","umbrella","wheelbarrow")
   
-  #Changes everything to lower case incase input has different formating
+  #Changes everything to lower case in case input has different formatting
   names <- tolower(c(...))
   
   #Check that there are between 2 and 4 names
@@ -262,7 +261,7 @@ players<-player_select("?","?","?","?")#test with random names
 reset_board()
 players <- players %>%
   mutate(Money = NA_real_,Location = NA_character_,
-         Properties = NA_character_)
+         Properties = NA_character_,'Get Out of Jail Free' = NA_real_)
 bank<-tibble(Money = 15140,
          houses = 32, hotels = 12)
 bank$Money<- bank$Money-1500*nrow(players)
@@ -270,6 +269,27 @@ players$Money<- 1500
 players$Location<-1
 new_board_squares$Occupants[1] <-list(players$Name)
 new_board_squares$Occupants[[1]]
+
+
+
+#card effects( street repair,get out of jail free card, birthday card need to be worked on, get out of jail free needs to update a stat indicating that, birday card needs to remove $10 from each other player as well,
+CommunityChestCards%>% mutate(
+  Money = c(200, 200, -50, 50, NA, NA, 100, 20, 10*(nrow(players)-1), 100, -100, -50, 25, NA, 10, 100),
+  Property = NA,
+  Location = c(1, 1, NA, NA, NA, 31, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA)) -> CommunityChestCards
+
+#not quite there yet
+Draw_Community_Card<- function(){
+drawn_card<-sample(1:16, 1, replace = F)
+print(CommunityChestCards[drawn_card,])
+CommunityChestCards<<-CommunityChestCards[-drawn_card,]
+if(nrow(CommunityChestCards=2))
+}
+
+CommunityChestCards
+
+
+
 
 
 move_player <- function(x) {
@@ -321,6 +341,19 @@ run_move_player <- function() {
   return(list(players = players, location_tally = location_tally))
 }
 run_move_player()
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 ```
