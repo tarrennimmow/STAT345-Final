@@ -11,6 +11,9 @@ library(tibble)
 library(tidyr)
 library(utils)
 library(dplyr)
+library(googleway)
+library(httr)
+library(magrittr)
 ```
 
 ## Section One
@@ -29,7 +32,7 @@ ChanceCards <- data.frame(index = 1:16, card = c("Advance to Boardwalk", "Advanc
 
 CommunityChestCards <- data.frame(index = 1:16, card = c("Advance to Go (Collect $200)", "Bank error in your favor. Collect $200", "Doctor’s fee. Pay $50", "From sale of stock you get $50", "Get Out of Jail Free", "Go to Jail. Go directly to jail, do not pass Go, do not collect $200", "Holiday fund matures. Receive $100", "Income tax refund. Collect $20", "It is your birthday. Collect $10 from every player", "Life insurance matures. Collect $100", "Pay hospital fees of $100", "Pay school fees of $50", "Receive $25 consultancy fee", "You are assessed for street repair. $40 per house. $115 per hotel", "You have won second prize in a beauty contest. Collect $10", "You inherit $100"))
 
-<<<<<<< HEAD
+#<<<<<<< HEAD
 #CommunityChestMove <- data.frame(index = 1:16, moveto = c())
 
 player <- setRefClass("player", fields = list(pos="numeric", verbos='logical'), method=list(
@@ -40,9 +43,9 @@ player <- setRefClass("player", fields = list(pos="numeric", verbos='logical'), 
   go2jail = function(x){}
 ))
 
-=======
+#=======
 #CommunityMove <- data.frame(index = 1:16, moveto = c())
->>>>>>> 5c4c8c539ce83b870ff323c5512c6abf74720eaa
+#>>>>>>> 5c4c8c539ce83b870ff323c5512c6abf74720eaa
 
 ```
 
@@ -52,6 +55,7 @@ player <- setRefClass("player", fields = list(pos="numeric", verbos='logical'), 
 ```{r student2}
 #Tarren
 # another test
+list(players = players, location_tally = location_tally)
 ```
 
 ## Section Three
@@ -62,14 +66,15 @@ player <- setRefClass("player", fields = list(pos="numeric", verbos='logical'), 
 roll<-function() {
   die <- sample(1:6, 6, replace = T)
   if(die[1] != die[2]){
-    total_sum<-sum(die[1:2])
+    total_sum<<-sum(die[1:2])
     return(total_sum)
   }
   if( die[3] != die[4]){
     print("double")
-  total_sum<-sum(die[1:4])
+  total_sum<<-sum(die[1:4])
     return(total_sum)}
 if(die[5] != die[6]){
+  total_sum<<-0
     print("triple")
   print("go to jail")
 }}
@@ -144,25 +149,31 @@ new_board_squares<-new_board_squares[match(board_squares$`Tile Name`, new_board_
 
 
 #recombines the different tile classes together
-new_board_squares<-bind_rows(Property_Tiles,Utility_Tiles,Railroad_Tiles,Chance_Tiles,Community_Chest_Tiles,Go_Tiles,Luxury_Tax_Tiles,Income_Tax_Tiles,Go_to_Jail_Tiles,Jail,Free_Parking)
+new_board_squares<<-bind_rows(Property_Tiles,Utility_Tiles,Railroad_Tiles,Chance_Tiles,Community_Chest_Tiles,Go_Tiles,Luxury_Tax_Tiles,Income_Tax_Tiles,Go_to_Jail_Tiles,Jail,Free_Parking)
 
 #reorganizes the tiles back into their correct locations
-new_board_squares<-new_board_squares[match(board_squares$`Tile Name`, new_board_squares$`Tile Name`), ]
+new_board_squares<<-new_board_squares[match(board_squares$`Tile Name`, new_board_squares$`Tile Name`), ]
 View(new_board_squares)
 }
 
-reset_board()
+
 
 #need to add check counting how many "?" values are included in the token_selection
 
 
 
-token_selection<-function(...) {#takes a 2 to 4 values, either the name of a piece or a ?, and outputs those pieces as a character vector
+
+
+
+player_select <-function(...){
+  token_selection<-function(...) {#takes a 2 to 4 values, either the name of a piece or a ?, and outputs those pieces as a character vector
+  
+as.character(c(...))
   
   #list of pieces
   pieces <- c("ace of spades","airplane","alarm clock","alligator","anvil","baby dinosaur","bag of money","balloon","baseball glove","basket","battleship","beach cruiser bike","bear","bicycle","boat","boot","bowtie","cactus","cannon","car","cat","cell phone","cheeseburger","chef's hat","chicken","computer","conductor's hat","cowboy hat","crab","crown","crystal","diamond","diamond ring","dice","dog","donut","dragon","duck","ducky","earmuffs","earth","egg","electric guitar","elephant","empanada","fire hydrant","fish","fishing pole","football","football helmet","frankenstein","french fries","frog","ghost","giant panda","gingerbread man","giraffe","globe","goldfish","golf bag","gondola","graduation cap","grapes","guitar","hammer","handcuffs","happy meal","hard hat","hashtag","hat","helicopter","hot air balloon","hot dog","horse and rider","horse shoe","ice cream cone","iron","jet plane","kangaroo","kettle","key","keyboard","king","kitty","koala","lantern","laptop","lighthouse","limousine","lion","little red wagon","locomotive","london bus","magic lamp","magnet","mallard duck","mallet","maple leaf","matchstick","metal car","microphone","money bag","monster truck","moon rover","motorcycle","mr. monopoly","music note","new balance sneaker","panda","penguin","phone","piece of cake","piggy bank","pineapple","plane","pretzel","pumpkin","racecar","razor","robot","roller skate","rooster","rubber ducky","sailboat","saxophone","scottie dog","shoe","skateboard","spaceship","spoon","sports car","stack of cash","star","statue of liberty","stethoscope","strawberry","sunflower","sunglasses","surfboard","taco","thimble","top hat","t-rex","tree","trolley car","trumpet","turtle","tv","typewriter","umbrella","wheelbarrow")
   
-  #Changes everything to lower case
+  #Changes everything to lower case incase input has different formating
   names <- tolower(c(...))
   
   #Check that there are between 2 and 4 names
@@ -180,20 +191,18 @@ token_selection<-function(...) {#takes a 2 to 4 values, either the name of a pie
     }
   }
   
-  #Assigns a random piece to any "?" inputs
+  # Assigns a random piece to any "?" inputs
   if ("?" %in% names) {
     chosen_pieces <- unique(names[names != "?"])
     available_pieces <- setdiff(pieces, chosen_pieces)
-    random_piece <- sample(available_pieces, 1)
-    names[names == "?"] <- random_piece
+    random_pieces <- sample(available_pieces, length(names[names == "?"]), replace = F)
+    names[names == "?"] <- random_pieces
   }
   
-  #Creates a tibble of Player_Number and Name
+  # Creates a tibble of Player_Number and Name
   player_num <- 1:length(names)
   tibble(Player_Number = player_num, Name = names)
 }
-
-
 
 assign_players <- function(...){
   
@@ -215,19 +224,103 @@ assign_players <- function(...){
   # Return the tibble with only two columns
   return(na.omit(players[1:4, c("Player_Number", "Name")]))
 }
+return(token_selection(c(...))$Name%>%assign_players())#janky function glueing the other two into a single command
+}
 
 
 
 
-assign_players()
+testing <- function(n){#test the roll function to make sure values come out correctly
+# Set the number of iterations
+  n_iterations <- n
+
+# Create a vector to store the logged values
+total_sum_vector <- numeric(n_iterations)
+
+# Loop through the iterations
+for (i in 1:n_iterations) {
+  #literally copied this from the internet but it works flawlessly
+sink(nullfile())
+  roll()
+  sink()
+  # Run the roll() function and store the result in the vector
+  total_sum_vector[i] <- total_sum
+}
+return(total_sum_vector)
+
+}
+#graphical representation of 100000 roll results
+hist(testing(100000), breaks = 50)
 
 
-players_tokens <- token_selection("ace of spades", "crab","?")
-players_tokens
-#charter vector of names
-str(players_tokens$Name)
+#set player locations to square 1
+#steps for starting each new game
 
-assign_players(players_tokens$Name)
+#######manual reset of the board game(will automate later)
+#takes money from bank and gives it to the players
+players<-player_select("?","?","?","?")#test with random names
+reset_board()
+players <- players %>%
+  mutate(Money = NA_real_,Location = NA_character_,
+         Properties = NA_character_)
+bank<-tibble(Money = 15140,
+         houses = 32, hotels = 12)
+bank$Money<- bank$Money-1500*nrow(players)
+players$Money<- 1500
+players$Location<-1
+new_board_squares$Occupants[1] <-list(players$Name)
+new_board_squares$Occupants[[1]]
+
+
+move_player <- function(x) {
+  roll()#rolls dice to determine spaces to move
+  print(total_sum)#prints dice roll result
+  new_location <- players[[x, "Location"]] + total_sum#moves the player to the new location
+  
+  if (new_location > 40) {#checks if the player passes 40th square
+    new_location <- new_location - 40#removes 40 from total position corresponding to lapping the board
+    players[x, "Money"]<<-  players[x, "Money"]+ 200#adds 200 dollars to that players money
+    bank$Money<<- bank$Money-200 #takes away the money from the bank
+    passed_Go <- c("Player: ", players$Name[x], "passed Go")
+    print( passed_Go)#announces player passed go
+  }
+  
+  if(total_sum == 0 || new_location == 31){#conditions for going to jail
+    
+    new_location <- 11}#sends player to jail
+  
+  players[x, "Location"] <<- new_location#moves player to the correct space after go
+  new_location<<-new_location
+  
+ return(players)#displays the new players stat
+  return(new_location)
+  
+  }
+#move test for player 1
+move_player(1)
+
+
+#game test
+run_move_player <- function() {
+  i <- 1
+  k <- 1
+  location_tally <- c()
+  while (TRUE) {
+    move_player(i)
+    location_tally[k] <- new_location
+    k <- k + 1
+    if (bank$Money < -100000) {
+      print("Bank has run out of money!")
+      break
+    }
+    i <- i + 1
+    if (i > 4) {
+      i <- 1
+    }
+  }
+  return(list(players = players, location_tally = location_tally))
+}
+run_move_player()
 
 
 ```
