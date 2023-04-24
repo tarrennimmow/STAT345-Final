@@ -420,7 +420,7 @@ player<-function(){#manually set player turn for now
 move<- function(x){
   roll()#rolls dice to determine spaces to move
   print(total_sum)#prints dice roll result
-  new_location <- player_stats[[x, "Location"]] + total_sum#moves the player to the new location
+  new_location <- player_stats[x, "Location"] + total_sum#moves the player to the new location
   
   if (new_location > 40) {#checks if the player passes 40th square
     new_location <- new_location - 40#removes 40 from total position corresponding to lapping the board
@@ -429,7 +429,8 @@ move<- function(x){
     passed_Go <- c("Player: ", player_stats$Name[x], "passed Go")
     print( passed_Go)#announces player passed go
   }
-  
+  if(new_location == 3||18||34){
+    Draw_Community_Card()}
   if(total_sum == 0 || new_location == 31){#conditions for going to jail
     
     new_location <- 11}#sends player to jail
@@ -441,8 +442,71 @@ move<- function(x){
   return(new_location)}
 player()%>%move()
 return(player_stats)
-if(new_location == 3||18||34){Draw_Community_Card()}#doesnt work, just ignores it
 }
+
+move_player()
+move_player()
+move_player()
+move_player()
+move_player()
+move_player()
+move_player()
+move_player()
+move_player()
+move_player()
+move_player()
+move_player()
+move_player()
+move_player()
+move_player()
+move_player()
+move_player()
+move_player()
+move_player()
+move_player()
+move_player()
+move_player()
+move_player()
+move_player()
+move_player()
+move_player()
+move_player()
+move_player()
+move_player()
+move_player()
+move_player()
+move_player()
+move_player()
+move_player()
+move_player()
+move_player()
+move_player()
+move_player()
+move_player()
+move_player()
+move_player()
+move_player()
+move_player()
+move_player()
+move_player()
+move_player()
+move_player()
+move_player()
+move_player()
+move_player()
+move_player()
+move_player()
+move_player()
+move_player()
+move_player()
+move_player()
+move_player()
+move_player()
+move_player()
+move_player()
+CommunityChestCards
+removed_community_cards
+
 
 
 ```
