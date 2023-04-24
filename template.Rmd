@@ -203,7 +203,7 @@ as.character(c(...))
   tibble(Player_Number = player_num, Name = names)
 }
 
-assign_players <- function(...){
+assign_player_stats <- function(...){
   
   # Combine the names into a vector
   names<-c(...)
@@ -212,69 +212,68 @@ assign_players <- function(...){
   scores <- tapply(scores, rep(1:length(names), each = 2), sum)
   
   # Combine the names and scores into a tibble
-  players <- tibble(Name = names, Score = scores)
+  player_stats <- tibble(Name = names, Score = scores)
   
   # Sort the tibble by score in descending order
-  players <- players[order(-players$Score), ]
+  player_stats <- player_stats[order(-player_stats$Score), ]
   
   # Assign the player numbers
-  players$Player_Number <- 1:nrow(players)
+  player_stats$Player_Number <- 1:nrow(player_stats)
   
   # Return the tibble with only two columns
-  return(na.omit(players[1:4, c("Player_Number", "Name")]))
+  return(na.omit(player_stats[1:4, c("Player_Number", "Name")]))
 }
-return(token_selection(c(...))$Name%>%assign_players())#janky function glueing the other two into a single command
+return(token_selection(c(...))$Name%>%assign_player_stats())#janky function gluing the other two into a single command
 }
-
-
-
-
-
 
 
 #set player locations to square 1
 #steps for starting each new game
 
 #######manual reset of the board game(will automate later)
-#takes money from bank and gives it to the players
-players<-player_select("?","?","?","?")#test with random names
+#takes money from bank and gives it to the player_stats
+player_stats<-player_select("?","?","?","?")#test with random names
 reset_board()
-players <- players %>%
+player_stats <- player_stats %>%
   mutate(Money = NA_real_,Location = NA_character_,
-         Properties = NA_character_,'Get Out of Jail Free' = NA_real_)
+         'Owned Properties' = NA_character_,'Houses' = 0,'Hotels' = 0)
 bank<-tibble(Money = 15140,
          houses = 32, hotels = 12)
-bank$Money<- bank$Money-1500*nrow(players)
-players$Money<- 1500
-players$Location<-1
-new_board_squares$Occupants[1] <-list(players$Name)
+bank$Money<- bank$Money-1500*nrow(player_stats)
+player_stats$Money<- 1500
+player_stats$Location<-1
+new_board_squares$Occupants[1] <-list(player_stats$Name)
 new_board_squares$Occupants[[1]]
+player_turn<-c(1)
+total_turns<-c(1)
+reset_CommunityChestCards()
 
 
-
-#card effects( street repair,get out of jail free card, birthday card need to be worked on, get out of jail free needs to update a stat indicating that, birday card needs to remove $10 from each other player as well,
+#card effects(birthday card need to be worked on, get out of jail free needs to update a stat indicating that, birthday card needs to remove $10 from each other player as well,
 
 
 reset_CommunityChestCards<-function(){
-CommunityChestCards <- data.frame(card = c("Advance to Go (Collect $200)", "Bank error in your favor. Collect $200", "Doctor’s fee. Pay $50", "From sale of stock you get $50", "Get Out of Jail Free", "Go to Jail. Go directly to jail, do not pass Go, do not collect $200", "Holiday fund matures. Receive $100", "Income tax refund. Collect $20", "It is your birthday. Collect $10 from every player", "Life insurance matures. Collect $100", "Pay hospital fees of $100", "Pay school fees of $50", "Receive $25 consultancy fee", "You are assessed for street repair. $40 per house. $115 per hotel", "You have won second prize in a beauty contest. Collect $10", "You inherit $100"))
-CommunityChestCards%>% mutate(
-  Money = c(200, 200, -50, 50, NA, NA, 100, 20, 10*(nrow(players)-1), 100, -100, -50, 25, NA, 10, 100),
-  Property = NA,
-  Location = c(1, 1, NA, NA, NA, 31, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA)) ->> CommunityChestCards
+  removed_community_cards <<- data.frame(matrix(ncol = 0, nrow = 0))
+  CommunityChestCards <- data.frame(card = c("Advance to Go (Collect $200)", "Bank error in your favor. Collect $200", "Doctor’s fee. Pay $50", "From sale of stock you get $50", "Get Out of Jail Free", "Go to Jail. Go directly to jail, do not pass Go, do not collect $200", "Holiday fund matures. Receive $100", "Income tax refund. Collect $20", "It is your birthday. Collect $10 from every player", "Life insurance matures. Collect $100", "Pay hospital fees of $100", "Pay school fees of $50", "Receive $25 consultancy fee", "You are assessed for street repair. $40 per house. $115 per hotel", "You have won second prize in a beauty contest. Collect $10", "You inherit $100"))
+CommunityChestCards <- data.frame(index = 1:16, card = c("Advance to Go (Collect $200)", "Bank error in your favor. Collect $200", "Doctor’s fee. Pay $50", "From sale of stock you get $50", "Get Out of Jail Free", "Go to Jail. Go directly to jail, do not pass Go, do not collect $200", "Holiday fund matures. Receive $100", "Income tax refund. Collect $20", "It is your birthday. Collect $10 from every player", "Life insurance matures. Collect $100", "Pay hospital fees of $100", "Pay school fees of $50", "Receive $25 consultancy fee", "You are assessed for street repair. $40 per house. $115 per hotel", "You have won second prize in a beauty contest. Collect $10", "You inherit $100"))
+CommunityChestCards%>% select(-index) %>% mutate(#assign player who drew it, then assign that value to street repair
+  Money = c(200, 200, -50, 50, NA, NA, 100, 20, 10*(nrow(player_stats)-1), 100, -100, -50, 25,-40*(player_stats[[player_turn,"Houses"]])-115*(player_stats[[player_turn,"Hotels"]]), 10, 100),
+  Location = c(NA, 1, NA, NA, NA, 31, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA), 'Drew By' = NA_character_) ->> CommunityChestCards
 }
 
-
+reset_CommunityChestCards()
+CommunityChestCards
 
 move_player <- function(x) {
   roll()#rolls dice to determine spaces to move
   print(total_sum)#prints dice roll result
-  new_location <- players[[x, "Location"]] + total_sum#moves the player to the new location
+  new_location <- player_stats[[x, "Location"]] + total_sum#moves the player to the new location
   
   if (new_location > 40) {#checks if the player passes 40th square
     new_location <- new_location - 40#removes 40 from total position corresponding to lapping the board
-    players[x, "Money"]<<-  players[x, "Money"]+ 200#adds 200 dollars to that players money
+    player_stats[x, "Money"]<<-  player_stats[x, "Money"]+ 200#adds 200 dollars to that player_stats money
     bank$Money<<- bank$Money-200 #takes away the money from the bank
-    passed_Go <- c("Player: ", players$Name[x], "passed Go")
+    passed_Go <- c("Player: ", player_stats$Name[x], "passed Go")
     print( passed_Go)#announces player passed go
   }
   
@@ -282,25 +281,41 @@ move_player <- function(x) {
     
     new_location <- 11}#sends player to jail
   
-  players[x, "Location"] <<- new_location#moves player to the correct space after go
+  player_stats[x, "Location"] <<- new_location#moves player to the correct space after go
   new_location<<-new_location
   
- return(players)#displays the new players stat
+ return(player_stats)#displays the new player_stats stat
   return(new_location)
   
   }
 
 
+
+
+
 #completed function for drawing cards
-Draw_Community_Card<- function(){
-  if(nrow(CommunityChestCards)<1){
-    return(c("out of cards"))}
-  drawn_card<-sample(1:nrow(CommunityChestCards), 1)
-  card<-(CommunityChestCards[drawn_card,])
-CommunityChestCards<<-CommunityChestCards[-drawn_card,]
-return(card)
+Draw_Community_Card <- function() {
+  if (nrow(CommunityChestCards) < 1) {#what to do when last card is drawn
+    return(c("out of cards"))
+  }
+  community_card_drew <- sample(1:nrow(CommunityChestCards), 1)#pick 1 card from the available number of cards(rows)
+  community_card <- CommunityChestCards[community_card_drew, ]#define which card was drawn as community_card
+  community_card[1,'Drew By']<-player_turn#update the 'Drew By' element of that card to log who drew it
+  
+  #logs which card was removed
+  removed_community_cards <<- rbind(removed_community_cards, community_card)#add that card to the global list of drawn community cards
+  
+  CommunityChestCards <<- CommunityChestCards[-community_card_drew, ]#remove the card from the available community cards globally 
+  return(community_card)#display the drawn card 
 }
 
+
+player_stats
+player_turn<-player_stats[[1,1]]#defines current player turn as the numeric value associated with the "player_stats" tibble first row and column
+player_turn
+
+player_stats[[player_turn,"Houses"]]#from the player_stats tibble, reads off the number associated with player_turn as the row, and counts how many houses they own
+player_stats[[player_turn,"Hotels"]]
 
 ```
 
@@ -339,7 +354,7 @@ run_move_player <- function() {
     move_player(i)
     location_tally[k] <- new_location
     k <- k + 1
-    if (bank$Money < -100000) {
+    if (bank$Money < -10000) {
       print("Bank has run out of money!")
       break
     }
@@ -348,7 +363,7 @@ run_move_player <- function() {
       i <- 1
     }
   }
-  return(list(players = players, location_tally = location_tally))
+  return(list(player_stats = player_stats, location_tally = location_tally))
 }
 
 
@@ -363,10 +378,10 @@ test_communitycards <- function() {
       if (nrow(CommunityChestCards) < 1) {
         return(c("out of cards"))
       }
-      drawn_card <- sample(1:nrow(CommunityChestCards), 1)
-      card <- CommunityChestCards[drawn_card, ]
-      CommunityChestCards <<- CommunityChestCards[-drawn_card, ]
-      return(card)
+      community_card_drew <- sample(1:nrow(CommunityChestCards), 1)
+      community_card <- CommunityChestCards[community_card_drew, ]
+      CommunityChestCards <<- CommunityChestCards[-community_card_drew, ]
+      return(community_card)
     }
     output_list[[i]] <- Draw_Community_Card()  # Move this line inside the loop
   }
@@ -375,6 +390,59 @@ test_communitycards <- function() {
 
 test_communitycards()#should display each of the 16 community chest cards as a tibble in a list, in random order, then it should display a character vector c("out of cards") as teh 17th entry
 
+
+Draw_Community_Card <- function() {
+  if (nrow(CommunityChestCards) < 1) {
+    return(c("out of cards"))
+  }
+  community_card_drew <- sample(1:nrow(CommunityChestCards), 1)
+  community_card <- CommunityChestCards[community_card_drew, ]
+  community_card[1,'Drew By']<-player_turn
+  
+  #logs which card was removed
+  removed_community_cards <<- rbind(removed_community_cards, community_card)
+  
+  CommunityChestCards <<- CommunityChestCards[-community_card_drew, ]
+  return(community_card)
+}
+
+
+
+
+move_player<-function(){
+player<-function(){#manually set player turn for now
+  x <- player_turn
+  if(player_turn > nrow(player_stats)){player_turn <<-1
+  total_turns<<-total_turns + 1}
+  player_turn<<-player_turn+1
+  return(player_turn-1)
+  }
+move<- function(x){
+  roll()#rolls dice to determine spaces to move
+  print(total_sum)#prints dice roll result
+  new_location <- player_stats[[x, "Location"]] + total_sum#moves the player to the new location
+  
+  if (new_location > 40) {#checks if the player passes 40th square
+    new_location <- new_location - 40#removes 40 from total position corresponding to lapping the board
+    player_stats[x, "Money"]<<-  player_stats[x, "Money"]+ 200#adds 200 dollars to that player_stats money
+    bank$Money<<- bank$Money-200 #takes away the money from the bank
+    passed_Go <- c("Player: ", player_stats$Name[x], "passed Go")
+    print( passed_Go)#announces player passed go
+  }
+  
+  if(total_sum == 0 || new_location == 31){#conditions for going to jail
+    
+    new_location <- 11}#sends player to jail
+  
+  player_stats[x, "Location"] <<- new_location#moves player to the correct space after go
+  new_location<<-new_location
+  
+ return(player_stats)#displays the new player_stats stat
+  return(new_location)}
+player()%>%move()
+return(player_stats)
+if(new_location == 3||18||34){Draw_Community_Card()}#doesnt work, just ignores it
+}
 
 
 ```
