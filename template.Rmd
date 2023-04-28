@@ -230,23 +230,6 @@ return(token_selection(c(...))$Name%>%assign_player_stats())#janky function glui
 #set player locations to square 1
 #steps for starting each new game
 
-#######manual reset of the board game(will automate later)
-#takes money from bank and gives it to the player_stats
-player_stats<-player_select("?","?","?","?")#test with random names
-reset_board()
-player_stats <- player_stats %>%
-  mutate(Money = NA_real_,Location = NA_character_,
-         'Owned Properties' = NA_character_,'Houses' = 0,'Hotels' = 0)
-bank<-tibble(Money = 15140,
-         houses = 32, hotels = 12)
-bank$Money<- bank$Money-1500*nrow(player_stats)
-player_stats$Money<- 1500
-player_stats$Location<-1
-new_board_squares$Occupants[1] <-list(player_stats$Name)
-new_board_squares$Occupants[[1]]
-player_turn<-c(1)
-total_turns<-c(1)
-reset_CommunityChestCards()
 
 
 #card effects(birthday card need to be worked on, get out of jail free needs to update a stat indicating that, birthday card needs to remove $10 from each other player as well,
@@ -255,8 +238,7 @@ reset_CommunityChestCards()
 reset_CommunityChestCards<-function(){
   removed_community_cards <<- data.frame(matrix(ncol = 0, nrow = 0))
   CommunityChestCards <- data.frame(card = c("Advance to Go (Collect $200)", "Bank error in your favor. Collect $200", "Doctor’s fee. Pay $50", "From sale of stock you get $50", "Get Out of Jail Free", "Go to Jail. Go directly to jail, do not pass Go, do not collect $200", "Holiday fund matures. Receive $100", "Income tax refund. Collect $20", "It is your birthday. Collect $10 from every player", "Life insurance matures. Collect $100", "Pay hospital fees of $100", "Pay school fees of $50", "Receive $25 consultancy fee", "You are assessed for street repair. $40 per house. $115 per hotel", "You have won second prize in a beauty contest. Collect $10", "You inherit $100"))
-CommunityChestCards <- data.frame(index = 1:16, card = c("Advance to Go (Collect $200)", "Bank error in your favor. Collect $200", "Doctor’s fee. Pay $50", "From sale of stock you get $50", "Get Out of Jail Free", "Go to Jail. Go directly to jail, do not pass Go, do not collect $200", "Holiday fund matures. Receive $100", "Income tax refund. Collect $20", "It is your birthday. Collect $10 from every player", "Life insurance matures. Collect $100", "Pay hospital fees of $100", "Pay school fees of $50", "Receive $25 consultancy fee", "You are assessed for street repair. $40 per house. $115 per hotel", "You have won second prize in a beauty contest. Collect $10", "You inherit $100"))
-CommunityChestCards%>% select(-index) %>% mutate(#assign player who drew it, then assign that value to street repair
+CommunityChestCards%>% mutate(#assign player who drew it, then assign that value to street repair
   Money = c(200, 200, -50, 50, NA, NA, 100, 20, 10*(nrow(player_stats)-1), 100, -100, -50, 25,-40*(player_stats[[player_turn,"Houses"]])-115*(player_stats[[player_turn,"Hotels"]]), 10, 100),
   Location = c(NA, 1, NA, NA, NA, 31, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA), 'Drew By' = NA_character_) ->> CommunityChestCards
 }
@@ -316,6 +298,30 @@ player_turn
 
 player_stats[[player_turn,"Houses"]]#from the player_stats tibble, reads off the number associated with player_turn as the row, and counts how many houses they own
 player_stats[[player_turn,"Hotels"]]
+
+
+
+
+#######manual reset of the board game(will automate later)
+#takes money from bank and gives it to the player_stats
+player_stats<-player_select("?","?","?","?")#test with random names
+reset_board()
+player_stats <- player_stats %>%
+  mutate(Money = NA_real_,Location = NA_character_,
+         'Owned Properties' = NA_character_,'Houses' = 0,'Hotels' = 0)
+bank<-tibble(Money = 15140,
+         houses = 32, hotels = 12)
+bank$Money<- bank$Money-1500*nrow(player_stats)
+player_stats$Money<- 1500
+player_stats$Location<-1
+new_board_squares$Occupants[1] <-list(player_stats$Name)
+new_board_squares$Occupants[[1]]
+player_turn<-c(1)
+total_turns<-c(1)
+reset_CommunityChestCards()
+
+
+
 
 ```
 
