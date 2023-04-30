@@ -25,12 +25,12 @@ Gameboard <- data.frame(space = 1:40, title = c("Go", "Mediterranean Avenue", "C
 
 
 
-ChanceCards <- data.frame(index = 1:16, card = c("Advance to Boardwalk", "Advance to Go (Collect $200)", "Advance to Illinois Avenue. If you pass Go, collect $200", "Advance to St. Charles Place. If you pass Go, collect $200", "Advance to the nearest Railroad. If unowned, you may buy it from the Bank. If owned, pay wonder twice the rental to which they are otherwise entitled", "Advance to the nearest Railroad. If unowned, you may buy it from the Bank. If owned, pay wonder twice the rental to which they are otherwise entitled", "Advance token to nearest Utility. If unowned, you may buy it from the Bank. If owned, throw dice and pay owner a total ten times amount thrown.", "Bank pays you dividend of $50", "Get Out of Jail Free", "Go Back 3 Spaces", "Go to Jail. Go directly to Jail, do not pass Go, do not collect $200", "Make general repairs on all your property. For each house pay $25. For each hotel pay $100", "Speeding fine $15", "Take a trip to Reading Railroad. If you pass Go, collect $200", "You have been elected Chairman of the Board. Pay each player $50", "Your building loan matures. Collect $150"))
+#ChanceCards <- data.frame(index = 1:16, card = c("Advance to Boardwalk", "Advance to Go (Collect $200)", "Advance to Illinois Avenue. If you pass Go, collect $200", "Advance to St. Charles Place. If you pass Go, collect $200", "Advance to the nearest Railroad. If unowned, you may buy it from the Bank. If owned, pay wonder twice the rental to which they are otherwise entitled", "Advance to the nearest Railroad. If unowned, you may buy it from the Bank. If owned, pay wonder twice the rental to which they are otherwise entitled", "Advance token to nearest Utility. If unowned, you may buy it from the Bank. If owned, throw dice and pay owner a total ten times amount thrown.", "Bank pays you dividend of $50", "Get Out of Jail Free", "Go Back 3 Spaces", "Go to Jail. Go directly to Jail, do not pass Go, do not collect $200", "Make general repairs on all your property. For each house pay $25. For each hotel pay $100", "Speeding fine $15", "Take a trip to Reading Railroad. If you pass Go, collect $200", "You have been elected Chairman of the Board. Pay each player $50", "Your building loan matures. Collect $150"))
 
 #ChanceMove <- data.frame(index = 1:16, moveto = c())
 
 
-CommunityChestCards <- data.frame(index = 1:16, card = c("Advance to Go (Collect $200)", "Bank error in your favor. Collect $200", "Doctor’s fee. Pay $50", "From sale of stock you get $50", "Get Out of Jail Free", "Go to Jail. Go directly to jail, do not pass Go, do not collect $200", "Holiday fund matures. Receive $100", "Income tax refund. Collect $20", "It is your birthday. Collect $10 from every player", "Life insurance matures. Collect $100", "Pay hospital fees of $100", "Pay school fees of $50", "Receive $25 consultancy fee", "You are assessed for street repair. $40 per house. $115 per hotel", "You have won second prize in a beauty contest. Collect $10", "You inherit $100"))
+#CommunityChestCards <- data.frame(index = 1:16, card = c("Advance to Go (Collect $200)", "Bank error in your favor. Collect $200", "Doctor’s fee. Pay $50", "From sale of stock you get $50", "Get Out of Jail Free", "Go to Jail. Go directly to jail, do not pass Go, do not collect $200", "Holiday fund matures. Receive $100", "Income tax refund. Collect $20", "It is your birthday. Collect $10 from every player", "Life insurance matures. Collect $100", "Pay hospital fees of $100", "Pay school fees of $50", "Receive $25 consultancy fee", "You are assessed for street repair. $40 per house. $115 per hotel", "You have won second prize in a beauty contest. Collect $10", "You inherit $100"))
 
 #<<<<<<< HEAD
 #CommunityChestMove <- data.frame(index = 1:16, moveto = c())
@@ -212,19 +212,24 @@ assign_player_stats <- function(...){
   scores <- tapply(scores, rep(1:length(names), each = 2), sum)
   
   # Combine the names and scores into a tibble
-  player_stats <- tibble(Name = names, Score = scores)
+  player_stats <<- tibble(Name = names, Score = scores)
   
   # Sort the tibble by score in descending order
-  player_stats <- player_stats[order(-player_stats$Score), ]
+  player_stats <<- player_stats[order(-player_stats$Score), ]
   
   # Assign the player numbers
-  player_stats$Player_Number <- 1:nrow(player_stats)
+  player_stats$Player_Number <<- 1:nrow(player_stats)
   
   # Return the tibble with only two columns
+  player_stats<<-na.omit(player_stats[1:4, c("Player_Number", "Name")])
   return(na.omit(player_stats[1:4, c("Player_Number", "Name")]))
+  
 }
 return(token_selection(c(...))$Name%>%assign_player_stats())#janky function gluing the other two into a single command
 }
+
+
+
 
 
 #set player locations to square 1
@@ -237,14 +242,13 @@ return(token_selection(c(...))$Name%>%assign_player_stats())#janky function glui
 
 reset_CommunityChestCards<-function(){
   removed_community_cards <<- data.frame(matrix(ncol = 0, nrow = 0))
-  CommunityChestCards <- data.frame(card = c("Advance to Go (Collect $200)", "Bank error in your favor. Collect $200", "Doctor’s fee. Pay $50", "From sale of stock you get $50", "Get Out of Jail Free", "Go to Jail. Go directly to jail, do not pass Go, do not collect $200", "Holiday fund matures. Receive $100", "Income tax refund. Collect $20", "It is your birthday. Collect $10 from every player", "Life insurance matures. Collect $100", "Pay hospital fees of $100", "Pay school fees of $50", "Receive $25 consultancy fee", "You are assessed for street repair. $40 per house. $115 per hotel", "You have won second prize in a beauty contest. Collect $10", "You inherit $100"))
+  CommunityChestCards <<- data.frame(card = c("Advance to Go (Collect $200)", "Bank error in your favor. Collect $200", "Doctor’s fee. Pay $50", "From sale of stock you get $50", "Get Out of Jail Free", "Go to Jail. Go directly to jail, do not pass Go, do not collect $200", "Holiday fund matures. Receive $100", "Income tax refund. Collect $20", "It is your birthday. Collect $10 from every player", "Life insurance matures. Collect $100", "Pay hospital fees of $100", "Pay school fees of $50", "Receive $25 consultancy fee", "You are assessed for street repair. $40 per house. $115 per hotel", "You have won second prize in a beauty contest. Collect $10", "You inherit $100"))
 CommunityChestCards%>% mutate(#assign player who drew it, then assign that value to street repair
-  Money = c(200, 200, -50, 50, NA, NA, 100, 20, 10*(nrow(player_stats)-1), 100, -100, -50, 25,-40*(player_stats[[player_turn,"Houses"]])-115*(player_stats[[player_turn,"Hotels"]]), 10, 100),
+  Money = c(200, 200, -50, 50, NA, NA, 100, 20, 10* (nrow(player_stats)-1), 100, -100, -50, 25,-40*(player_stats[[player_turn,"Houses"]])-115*(player_stats[[player_turn,"Hotels"]]), 10, 100),
   Location = c(NA, 1, NA, NA, NA, 31, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA), 'Drew By' = NA_character_) ->> CommunityChestCards
 }
 
-reset_CommunityChestCards()
-CommunityChestCards
+
 
 move_player <- function(x) {
   roll()#rolls dice to determine spaces to move
@@ -292,38 +296,52 @@ Draw_Community_Card <- function() {
 }
 
 
-player_stats
-player_turn<-player_stats[[1,1]]#defines current player turn as the numeric value associated with the "player_stats" tibble first row and column
-player_turn
-
-player_stats[[player_turn,"Houses"]]#from the player_stats tibble, reads off the number associated with player_turn as the row, and counts how many houses they own
-player_stats[[player_turn,"Hotels"]]
-
-
-
-
 #######manual reset of the board game(will automate later)
 #takes money from bank and gives it to the player_stats
-player_stats<-player_select("?","?","?","?")#test with random names
-reset_board()
-player_stats <- player_stats %>%
-  mutate(Money = NA_real_,Location = NA_character_,
-         'Owned Properties' = NA_character_,'Houses' = 0,'Hotels' = 0)
-bank<-tibble(Money = 15140,
-         houses = 32, hotels = 12)
-bank$Money<- bank$Money-1500*nrow(player_stats)
-player_stats$Money<- 1500
-player_stats$Location<-1
-new_board_squares$Occupants[1] <-list(player_stats$Name)
-new_board_squares$Occupants[[1]]
-player_turn<-c(1)
-total_turns<-c(1)
-reset_CommunityChestCards()
 
+clean_wipe<- function(...){
+player_stats<<-player_select(...)#test with random names
+sink(nullfile())
+ reset_board()
+  sink()
+player_stats %>%
+  mutate(Money = NA_real_,Location = NA_character_,
+         'Owned Properties' = NA_character_,'Houses' = 0,'Hotels' = 0) ->> player_stats
+bank<<-tibble(Money = 15140,
+         houses = 32, hotels = 12)
+bank$Money<<- bank$Money-1500*nrow(player_stats)
+player_stats$Money<<- 1500
+player_stats$Location<<-1
+new_board_squares$Occupants[1] <<-list(player_stats$Name)
+new_board_squares$Occupants[[1]]
+player_turn<<-c(1)
+total_turns<<-c(1)
+reset_CommunityChestCards()}
+
+clean_wipe("fish","Crab", "Scottie dog", "?")
+player_stats
+
+
+```
+
+```{r}
+reset_ChanceCards<-function(){
+  data.frame(matrix(ncol = 0, nrow = 0))
+  ChanceCards <- data.frame(card = c("Advance to Boardwalk", "Advance to Go (Collect $200)", "Advance to Illinois Avenue. If you pass Go, collect $200", "Advance to St. Charles Place. If you pass Go, collect $200", "Advance to the nearest Railroad. If unowned, you may buy it from the Bank. If owned, pay wonder twice the rental to which they are otherwise entitled", "Advance to the nearest Railroad. If unowned, you may buy it from the Bank. If owned, pay wonder twice the rental to which they are otherwise entitled", "Advance token to nearest Utility. If unowned, you may buy it from the Bank. If owned, throw dice and pay owner a total ten times amount thrown.", "Bank pays you dividend of $50", "Get Out of Jail Free", "Go Back 3 Spaces", "Go to Jail. Go directly to Jail, do not pass Go, do not collect $200", "Make general repairs on all your property. For each house pay $25. For each hotel pay $100", "Speeding fine $15", "Take a trip to Reading Railroad. If you pass Go, collect $200", "You have been elected Chairman of the Board. Pay each player $50", "Your building loan matures. Collect $150"))
+  
+ChanceCards%>% mutate(#assign player who drew it, then assign that value to street repair
+  Money = c(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+  Location = c(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), 'Drew By' = NA_character_) ->> ChanceCards
+}
+
+reset_ChanceCards()
+ChanceCards
 
 
 
 ```
+
+
 
 ```{r}
 #testing grounds to make sure everything still works
@@ -336,7 +354,7 @@ total_sum_vector <- numeric(n_iterations)
 
 # Loop through the iterations
 for (i in 1:n_iterations) {
-  #literally copied this from the internet but it works flawlessly
+  #literally copied this from the internet but it works perfectly
 sink(nullfile())
   roll()
   sink()
@@ -446,6 +464,7 @@ move<- function(x){
   
  return(player_stats)#displays the new player_stats stat
   return(new_location)}
+
 player()%>%move()
 return(player_stats)
 }
