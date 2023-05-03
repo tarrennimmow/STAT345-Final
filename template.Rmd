@@ -96,7 +96,7 @@ reset_board <- function() {
              "Marvin Gardens", "Go to Jail", "Pacific Avenue", "North Carolina Avenue", "Community Chest", 
              "Pennsylvania Avenue", "Short Line Railroad", "Chance", "Park Place", "Luxury Tax", "Boardwalk")
 
-  board_squares <- tibble("Tile Name" = tiles, Class = NA, Occupants = NA, Owner = NA,"Mortgage Price" = c(0, 30, 0, 30, 0, 100, 50, 0, 50, 60,0, 70, 75, 70, 80, 100, 90, 0, 90,100, 0, 110, 0, 110, 120, 100, 130, 130,75,140, 0, 150, 150, 0, 160, 100, 0,175, 0, 200),  "Part of Monopoly" = NA, Description = NA, "Cost to Occupy" = NA, Effect = NA, "Effect on Player_1" = NA,"Effect on Player_2" = NA,"Effect on Player_3" = NA,"Effect on Player_4" = NA, "Effect on Bank"= NA)
+  board_squares <- tibble("Tile Name" = tiles, Class = NA, Occupants = NA, Owner = 'bank',"Mortgage Price" = c(0, 30, 0, 30, 0, 100, 50, 0, 50, 60,0, 70, 75, 70, 80, 100, 90, 0, 90,100, 0, 110, 0, 110, 120, 100, 130, 130,75,140, 0, 150, 150, 0, 160, 100, 0,175, 0, 200),  "Part of Monopoly" = NA, Description = NA, "Cost to Occupy" = NA, 'Color Set' = NA, "Number of Houses" = NA,"Hotels" = NA)
 
   board_squares$Class[board_squares$`Tile Name` %in% c("Mediterranean Avenue", "Baltic Avenue", "Oriental Avenue", "Vermont Avenue", "Connecticut Avenue", "St. Charles Place", "States Avenue", "Virginia Avenue", "St. James Place", "Tennessee Avenue", "New York Avenue", "Kentucky Avenue", "Indiana Avenue", "Illinois Avenue", "Atlantic Avenue", "Ventnor Avenue", "Marvin Gardens", "Pacific Avenue", "North Carolina Avenue", "Pennsylvania Avenue", "Park Place", "Boardwalk")] <- "Property Tile"
   board_squares$Class[board_squares$`Tile Name` %in% c("Electric Company", "Water Works")] <- "Utility Tile"
@@ -214,7 +214,7 @@ reset_ChanceCards<<-function(){#globably defines the reset_ChanceCards function
   "Advance token to nearest Utility. If unowned, you may buy it from the Bank. If owned, throw dice and pay owner a total ten times amount thrown.",
   "Advance token to nearest Railroad. If unowned, you may buy it from the Bank. If owned, pay owner twice the rental to which they are otherwise entitled.",
   "Bank pays you dividend of $50.",
-  "Get Out of Jail Free. This card may be kept until needed or traded.",
+  "Get Out of Jail Free",
   "Go Back 3 Spaces.",
   "Go to Jail. Go directly to Jail, do not pass Go, do not collect $200.",
   "Make general repairs on all your property. For each house pay $25. For each hotel pay $100.",
@@ -251,6 +251,7 @@ reset_board()
 game_setup()
 reset_CommunityChestCards()
 reset_ChanceCards()
+get_out_of_jail_card <<- c()
 player_stats#visualize board
 new_board_squares$Occupants<-list(character())
 new_board_squares$Occupants[1]<-list(player_stats$Name)#Defines the Occupants of the board squares as a character vector of all the players occupying the tile
@@ -271,12 +272,18 @@ Draw_Community_Card <- function() {
   community_card<-CommunityChestCards[community_card_drew, ]#define which card was drawn as community_card
   community_card[1,'Drew By']<-player_turn#update the 'Drew By' element of that card to log who drew it
   
+  # Check if the drawn card is 'Get Out of Jail Free'
+  if (community_card$card == 'Get Out of Jail Free') {
+    get_out_of_jail_card <<- c(get_out_of_jail_card, player_turn) # Create a global vector with the value player_turn
+  }
+  
   #logs which card was removed
   removed_community_cards<<-rbind(removed_community_cards, community_card)#add that card to the global list of drawn community cards
   
   CommunityChestCards <<- CommunityChestCards[-community_card_drew, ]#remove the card from the available community cards globally 
   return(community_card)#display the drawn card 
 }
+
 
 ############################################################################################################################
 
@@ -289,25 +296,76 @@ Draw_Chance_Card <- function() {
   Chance_card<-ChanceCards[Chance_card_drew, ]#define which card was drawn as community_card
   Chance_card[1,'Drew By']<-player_turn#update the 'Drew By' element of that card to log who drew it
   
+  if (Chance_card$card == 'Get Out of Jail Free') {
+    get_out_of_jail_card <<- c(get_out_of_jail_card, player_turn) # Create a global vector with the value player_turn
+  }
+  
   #logs which card was removed
   removed_Chance_cards<<-rbind(removed_Chance_cards, Chance_card)#add that card to the global list of drawn community cards
   
   ChanceCards <<- ChanceCards[-Chance_card_drew, ]#remove the card from the available community cards globally 
   return(Chance_card)#display the drawn card 
 }
+
+############################################################################################################################
+
+
+Purchase_Tile<-function(){#everything in the purchase bit is the same just now it is for a utility tile
+  
+  player_stats[player_turn, "Money"] <<- player_stats[player_turn, "Money"] - 2 * new_board_squares[new_location, "Mortgage Price"]
+  bank$Money <<- bank$Money + 2 * new_board_squares[[new_location, "Mortgage Price"]]
+  purchased <- paste("Player: ", player_stats$Name[player_turn], "bought", new_board_squares[new_location, "Tile Name"])
+  new_board_squares[new_location, "Owner"] <<- player_stats[player_turn, "Name"]
+  
+  # Update the 'Owned Properties' entry for the current player
+  if(is.na(player_stats[player_turn, "Owned Properties"])) {
+    player_stats[player_turn, "Owned Properties"] <<- new_board_squares[new_location, "Tile Name"]
+  } else {
+    player_stats[player_turn, "Owned Properties"] <<- paste(player_stats[player_turn, "Owned Properties"], new_board_squares[new_location, "Tile Name"], sep=", ")
+  }
+  
+  print(purchased)
+}
+
+
 ```
 
 
 ```{r}
 #this one
 move_player <- function() {
-  total_sum <- roll()  # rolls dice to determine spaces to move
+  while (!is.na(player_stats[player_turn, "Jail"]) && player_stats[player_turn, "Jail"] > 0) {
+  if (length(unique(sample(1:6,2, replace = T))) == 1){
+    print("Lucky Roll, Get Out of Jail")
+    player_stats[player_turn, 'Jail'] <<- 0
+    player_stats[player_turn, 'Money'] <<- player_stats[player_turn, 'Money'] - 50 
+    bank$Money <<- bank$Money + 50
+  } else if (player_turn %in% get_out_of_jail_card){
+    get_out_of_jail_card <<- get_out_of_jail_card[-which(get_out_of_jail_card == player_turn)]
+    cat(paste(player_stats[player_turn, 'Name'], "Used Get Out of Jail Free Card\n"))
+    player_stats[player_turn, 'Jail'] <<- 0
+  } else if (player_stats[player_turn, 'Jail'] > 3){
+    print("Get Out of Jail")
+    player_stats[player_turn, 'Jail'] <<- 0
+    player_stats[player_turn, 'Money'] <<- player_stats[player_turn, 'Money'] - 50 
+    bank$Money <<- bank$Money + 50
+  } else {
+    player_stats[player_turn, 'Jail'] <<- player_stats[player_turn, 'Jail'] + 1
+    cat(paste(player_stats[player_turn, 'Name'], "Is Stuck in Jail\n"))
+    player_turn <<- player_turn + 1  # Increment player_turn by 1
+    if (player_turn > nrow(player_stats)) {
+      player_turn <<- 1  # Reset player_turn to 1 if it exceeds the number of rows in player_stats
+    } 
+  }
+}
+
+  total_sum <<- roll()  # rolls dice to determine spaces to move
   print(total_sum)  # prints dice roll result
-  new_location <- player_stats[[player_turn, "Location"]] + total_sum  # moves the player, defined by player_turn, to the new location
+  new_location <<- player_stats[[player_turn, "Location"]] + total_sum  # moves the player, defined by player_turn, to the new location
 
   # First check
   if (new_location > 40) {  # checks if the player passes 40th square
-    new_location <- new_location - 40  # removes 40 from total position corresponding to lapping the board
+    new_location <<- new_location - 40  # removes 40 from total position corresponding to lapping the board
     player_stats[player_turn, "Money"] <<- player_stats[player_turn, "Money"] + 200  # adds 200 dollars to that player_stats money
     bank$Money <<- bank$Money - 200  # takes away the money from the bank
     passed_Go <- c("Player: ", player_stats$Name[player_turn], "passed Go")
@@ -317,6 +375,7 @@ move_player <- function() {
   # Second check
   if (total_sum == 0 || new_location == 31) {  # conditions for going to jail
     new_location <- 11  # sends player to jail
+   player_stats[player_turn, 'Jail']<<-1 
   }
 
   # Third check
@@ -325,87 +384,67 @@ move_player <- function() {
 
    if (current_class == "Railroad Tile") {#standin function to make sure things are working
     print("Railroad Tile")
-     if(is.na(new_board_squares[new_location, "Owner"]) & player_stats[player_turn, "Money"] > 2 * new_board_squares[new_location, "Mortgage Price"]) {
-  player_stats[player_turn, "Money"] <<- player_stats[player_turn, "Money"] - 2 * new_board_squares[new_location, "Mortgage Price"]
-  bank$Money <<- bank$Money + 2 * new_board_squares[new_location, "Mortgage Price"]
-  purchased <- paste("Player: ", player_stats$Name[player_turn], "bought", new_board_squares[new_location, "Tile Name"])
-  new_board_squares[new_location, "Owner"] <<- player_stats[player_turn, "Name"]
-  
-  # Update the 'Owned Properties' entry for the current player
-  if(is.na(player_stats[player_turn, "Owned Properties"])) {
-    player_stats[player_turn, "Owned Properties"] <<- new_board_squares[new_location, "Tile Name"]
-  } else {
-    player_stats[player_turn, "Owned Properties"] <<- paste(player_stats[player_turn, "Owned Properties"], new_board_squares[new_location, "Tile Name"], sep=", ")
-  }
-  
-  print(purchased)
-     }
+     if(new_board_squares[new_location, "Owner"] == 'bank' & player_stats[player_turn, "Money"] > 2 * new_board_squares[new_location, "Mortgage Price"]) {
+       
+  Purchase_Tile()
+    }
+     
+     
+     
      ########################need to add conditions for:  player is on an unowned tile and doesnt have enough money,player is on an owned tile of someone with multiple other railroads
      
-  } else if (current_class == "Chance Tile") {
+  } else if (current_class == "Chance Tile") {#if the class of the current location tile is a Chance Tile
+    Draw_Chance_Card()#run the Draw_Chance_Card function which randomly selects a card from the available chance cards, removes that card from the available chance cards, assigns that card to the current player (need to have another function actually make use of the information of the assigned card to)
     print("Chance Tile")
-    Draw_Chance_Card()
     
   } else if (current_class == "Community Chest Tile") {
+    Draw_Community_Card()#run the Draw_Community_Card function which randomly selects a card from the available community cards, removes that card from the available community cards, assigns that card to the current player (need to have another function actually make use of the information of the assigned card to)
     print("Community Chest Tile")
-    Draw_Community_Card()
     
-    
-  } else if (current_class == "Go Tile") {
+  } else if (current_class == "Go Tile") {#if the class of the current location tile is a Go Tile
+    #(nothing should happen)
     print("Go Tile")
-  } else if (current_class == "Luxury Tax") {
-    print("Luxury Tax")
-    player_stats[[player_turn, "Money"]]<<- player_stats[[player_turn, "Money"]] -75
-    bank$Money <<- bank$Money + 75
-  } else if (current_class == "Income Tax") {
+    
+  } else if (current_class == "Luxury Tax") {#if the class of the current location tile is a Luxury Tax Tile
+    print("Luxury Tax") #states the current tile
+    player_stats[[player_turn, "Money"]]<<- player_stats[[player_turn, "Money"]]- 75#take 75 dollars from the player
+    bank$Money <<- bank$Money + 75 #gives 75 dollars to the bank
+    
+    
+  } else if (current_class == "Income Tax") {#if the class of the current location tile is a Income Tax Tile
+    player_stats[[player_turn, "Money"]]<<- player_stats[[player_turn, "Money"]] -200#takes 200 dollars from the player
+    bank$Money <<- bank$Money + 200#gives 200 dollars to the bank
     print("Income Tax")
-    player_stats[[player_turn, "Money"]]<<- player_stats[[player_turn, "Money"]] -200
-    bank$Money <<- bank$Money + 200
     
   } else if (current_class == "Go to Jail Tile") {#this won't ever happen
+    #this won't ever happen as the "Go to Jail" function is already integrated in a earlier step 
     print("Go to Jail Tile")
     
-  } else if (current_class == "Jail") {
-    print("Just Visitng")
-  } else if (current_class == "Free Parking") {
+  } else if (current_class == "Jail") {#if current location is Jail
+    #the player is just visiting if they land on the jail tile without being sent there
+    if (total_sum != 0 || new_location != 31) {
+      print("Just Visitng")} 
+    
+  } else if (current_class == "Free Parking") {#if the class of the current location tile is a Free Parking Tile
+    #(nothing should happen)
     print("Free Parking")
-  } else if (current_class == "Property Tile") {
+    
+  } else if (current_class == "Property Tile") {#if the class of the current location tile is a Property Tile
     print("Property Tile")
-    if(is.na(new_board_squares[new_location, "Owner"]) & player_stats[player_turn, "Money"] > 2 * new_board_squares[new_location, "Mortgage Price"]) {
-  player_stats[player_turn, "Money"] <<- player_stats[player_turn, "Money"] - 2 * new_board_squares[new_location, "Mortgage Price"]
-  bank$Money <<- bank$Money + 2 * new_board_squares[new_location, "Mortgage Price"]
-  purchased <- paste("Player: ", player_stats$Name[player_turn], "bought", new_board_squares[new_location, "Tile Name"])
-  new_board_squares[new_location, "Owner"] <<- player_stats[player_turn, "Name"]
-  
-  # Update the 'Owned Properties' entry for the current player
-  if(is.na(player_stats[player_turn, "Owned Properties"])) {
-    player_stats[player_turn, "Owned Properties"] <<- new_board_squares[new_location, "Tile Name"]
-  } else {
-    player_stats[player_turn, "Owned Properties"] <<- paste(player_stats[player_turn, "Owned Properties"], new_board_squares[new_location, "Tile Name"], sep=", ")
-  }
-  
-  print(purchased)
-}
-
-
-  } else if (current_class == "Utility Tile") {
+    if(new_board_squares[new_location, "Owner"] == 'bank' & player_stats[player_turn, "Money"] > 2 * new_board_squares[new_location, "Mortgage Price"]) {
+      
+      Purchase_Tile()
+    }
+    
+    
+  } else if (current_class == "Utility Tile") {#if the class of the current location tile is a utility
     print("Utility Tile")
     
-    if(is.na(new_board_squares[new_location, "Owner"]) & player_stats[player_turn, "Money"] > 2 * new_board_squares[new_location, "Mortgage Price"]) {
-  player_stats[player_turn, "Money"] <<- player_stats[player_turn, "Money"] - 2 * new_board_squares[new_location, "Mortgage Price"]
-  bank$Money <<- bank$Money + 2 * new_board_squares[new_location, "Mortgage Price"]
-  purchased <- paste("Player: ", player_stats$Name[player_turn], "bought", new_board_squares[new_location, "Tile Name"])
-  new_board_squares[new_location, "Owner"] <<- player_stats[player_turn, "Name"]
+    if(new_board_squares[new_location, "Owner"] == 'bank' & player_stats[player_turn, "Money"] > 2 * new_board_squares[new_location, "Mortgage Price"]) {#everything in the purchase bit is the same just now it is for a utility tile
   
-  # Update the 'Owned Properties' entry for the current player
-  if(is.na(player_stats[player_turn, "Owned Properties"])) {
-    player_stats[player_turn, "Owned Properties"] <<- new_board_squares[new_location, "Tile Name"]
-  } else {
-    player_stats[player_turn, "Owned Properties"] <<- paste(player_stats[player_turn, "Owned Properties"], new_board_squares[new_location, "Tile Name"], sep=", ")
-  }
-  
-  print(purchased)
-}
+      Purchase_Tile()
+    }
+    
   }
   # Update the tibble with the new location
   temp_board_squares <- new_board_squares %>%
@@ -424,23 +463,36 @@ player_turn <<- player_turn + 1  # Increment player_turn by 1
   } 
   return(list(player_stats = player_stats, new_location = new_location))  # displays the new player_stats stat
 }
-move_player()
-removed_Chance_cards
-removed_community_cards
-CommunityChestCards
-player_stats
-new_board_squares
 
 ```
 
 ```{r}
+#needs more testing
+Purchase_Tile<-function(){#everything in the purchase bit is the same just now it is for a utility tile
+  
+  player_stats[player_turn, "Money"] <<- player_stats[player_turn, "Money"] - 2 * new_board_squares[new_location, "Mortgage Price"]
+  bank$Money <<- bank$Money + 2 * new_board_squares[[new_location, "Mortgage Price"]]
+  purchased <- paste("Player: ", player_stats$Name[player_turn], "bought", new_board_squares[new_location, "Tile Name"])
+  new_board_squares[new_location, "Owner"] <<- player_stats[player_turn, "Name"]
+  
+  # Update the 'Owned Properties' entry for the current player
+  if(is.na(player_stats[player_turn, "Owned Properties"])) {
+    player_stats[player_turn, "Owned Properties"] <<- new_board_squares[new_location, "Tile Name"]
+  } else {
+    player_stats[player_turn, "Owned Properties"] <<- paste(player_stats[player_turn, "Owned Properties"], new_board_squares[new_location, "Tile Name"], sep=", ")
+  }
+  
+  print(purchased)
+}
+
+#Purchase_House<-function(){
 
 ```
 
 
 ## Section Four
 
-```{r student4}
+```{r student4
 player<-function(){#does not take an input, uses the value of player_turn to advance the player_turn counter by 1, if the player_turn value sets x to be greater than the number of players (rows in the "player" tibble, then it reset x to be 1 and adds one to the global turn counter "total_turns"
   x <- player_turn
   if(x > nrow(player_stats)){player_turn <<-1#
@@ -451,12 +503,11 @@ player<-function(){#does not take an input, uses the value of player_turn to adv
 player()
 player_turn
 
-community_card[1, 'Drew By']
 
 ```
 
 
-```{r}
+```{r
 player_turn<- 1
 
 next_player<- function(){
