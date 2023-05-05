@@ -16,34 +16,20 @@ library(httr)
 library(magrittr)
 ```
 
-## Section One
-
-
-
-## Section Two
-
-```{r student2}
-#Tarren
-# another test
-```
-
-## Section Three
-
-
 ```{r student3}
 #James Bartsch
 #dice with unique doubles/triples results
 roll<<-function() {
   die <- sample(1:6, 6, replace = T)
-  if(die[1] != die[2]){
+  if(die[1] == die[2]){
     total_sum<<-sum(die[1:2])
     return(total_sum)
   }
-  if( die[3] != die[4]){
+  if( die[3] == die[4]){
     print("double")
   total_sum<<-sum(die[1:4])
     return(total_sum)}
-if(die[5] != die[6]){
+if(die[5] == die[6]){
   total_sum<<-0
     print("triple")
   print("go to jail")
@@ -456,81 +442,6 @@ Purchase_Tile<-function(){#everything in the purchase bit is the same just now i
 }
 
 #Purchase_House<-function(){
-
-```
-
-
-## Section Four
-
-```{r student4
-player<-function(){#does not take an input, uses the value of player_turn to advance the player_turn counter by 1, if the player_turn value sets x to be greater than the number of players (rows in the "player" tibble, then it reset x to be 1 and adds one to the global turn counter "total_turns"
-  x <- player_turn
-  if(x > nrow(player_stats)){player_turn <<-1#
-  total_turns<<-total_turns + 1}#total turn counter
-  player_turn<<-player_turn+1#next turn's player number
-  return(player_turn-1)#current player number
-  }
-player()
-player_turn
-
-
-```
-
-
-```{r
-player_turn<- 1
-
-next_player<- function(){
-  if(player_turn == nrow(player_stats)){ player_turn <<- 1
-  total_turns <<- total_turns+1
-  return(player_turn)}
-  player_turn <<- player_turn +1
-  return(player_turn)}
-
-next_player()  
-  
-nrow(player_stats)  
-
-
-
-move<- function(x){
-  x<-player_turn
-  roll()#rolls dice to determine spaces to move
-  print(total_sum)#prints dice roll result
-  new_location <- player_stats[x, "Location"] + total_sum#moves the player to the new location
-  
-  if (new_location > 40) {#checks if the player passes 40th square
-    new_location <- new_location - 40#removes 40 from total position corresponding to lapping the board
-    player_stats[x, "Money"]<<-  player_stats[x, "Money"]+ 200#adds 200 dollars to that player_stats money
-    bank$Money<<- bank$Money-200 #takes away the money from the bank
-    passed_Go <- c("Player: ", player_stats$Name[x], "passed Go")
-    print( passed_Go)#announces player passed go
-  }
-  if(new_location == 3 || new_location == 18 || new_location == 34){
-    Draw_Community_Card()}
-  if(total_sum == 0 || new_location == 31){#conditions for going to jail
-    
-    new_location <- 11}#sends player to jail
-  
-  player_stats[x, "Location"] <<- new_location#moves player to the correct space after go
-  new_location<<-new_location
-  
-  next_player()
- return(player_stats)#displays the new player_stats stat
-  return(new_location)}
-
-move()
-
-
-move_player<-function(){#this function is going to get ridiculously complex 
-  
-player()%>%move()
-return(player_stats)
-}
-
-player_turn
-
-
 
 ```
 
