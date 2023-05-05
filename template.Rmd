@@ -455,7 +455,7 @@ sim <- function (){
 move_player()
 }
 player_stats
-}
+} #Simulates one game, 20 turns per player
 sim()
 ```
 
