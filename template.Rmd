@@ -21,15 +21,15 @@ library(magrittr)
 #dice with unique doubles/triples results
 roll<<-function() {
   die <- sample(1:6, 6, replace = T)
-  if(die[1] == die[2]){
+  if(die[1] != die[2]){
     total_sum<<-sum(die[1:2])
     return(total_sum)
   }
-  if( die[3] == die[4]){
+  if( die[3] != die[4]){
     print("double")
   total_sum<<-sum(die[1:4])
     return(total_sum)}
-if(die[5] == die[6]){
+if(die[5] != die[6]){
   total_sum<<-0
     print("triple")
   print("go to jail")
@@ -444,4 +444,19 @@ Purchase_Tile<-function(){#everything in the purchase bit is the same just now i
 #Purchase_House<-function(){
 
 ```
+
+```{r}
+#Simulates a game. Works about 75% of the time.
+sim <- function (){
+    reset_board()
+    reset_ChanceCards()
+    reset_CommunityChestCards()
+    for (i in 1:80) {
+move_player()
+}
+player_stats
+}
+sim()
+```
+
 
